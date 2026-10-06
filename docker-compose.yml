@@ -1,0 +1,77 @@
+services:
+  app:
+    container_name: paymaster-test
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - ./app/:/app/
+      - /app/.venv
+    restart: always
+    command: python main.py
+    ports:
+      - 8000:8000
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  postgres:
+    container_name: postgres
+    image: postgres:16
+    restart: always
+    expose:
+      - 5432
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+    env_file:
+      - .env
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3.13-management
+    restart: always
+    volumes:
+      - rabbitmq-volume:/var/lib/rabbitmq
+    ports:
+      - '15672:15672'
+    env_file:
+      - .env
+
+  consumer:
+    container_name: paymaster-test-consumer
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - ./app/:/app/
+      - /app/.venv
+    restart: always
+    command: python start_consumer.py
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  relay:
+    container_name: paymaster-test-relay
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - ./app/:/app/
+      - /app/.venv
+    restart: always
+    command: python start_relay.py
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - rabbitmq
+
+volumes:
+  postgres-volume:
+  rabbitmq-volume:
+
